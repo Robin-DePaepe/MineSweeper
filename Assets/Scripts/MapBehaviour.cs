@@ -15,7 +15,7 @@ public class MapBehaviour : MonoBehaviour
     [SerializeField] private int m_MapHeight;
     [SerializeField] private int m_MineCount;
 
-    [Header("UI")]
+    [Header("UI - information")]
     [SerializeField] private TextMeshProUGUI m_MineCounterText;
     [SerializeField] private TextMeshProUGUI m_TimerText;
     [SerializeField] private TextMeshProUGUI m_ErrorMessage;
@@ -321,7 +321,7 @@ public class MapBehaviour : MonoBehaviour
 
         //setup camera size
         Camera camera = Camera.main;
-        float minSizeForHeight = (m_UpdatedMapHeight / 2f) * 1.2f; //Divided by 2 because 2 cells can fit into one orthographicSize height multiplied by a ratio that looks good with current UI setup
+        float minSizeForHeight = (m_UpdatedMapHeight / 2f) * 1.15f; //Divided by 2 because 2 cells can fit into one orthographicSize height multiplied by a ratio that looks good with current UI setup
         float minSizeForWidth = (m_UpdatedMapWidth / 4f) * 1.5f; //Divided by 4 because 4 cells can fit into one orthographicSize width multiplied by a ratio that looks good with current UI setup
 
         //Use the heighest size number to make sure it always fits onto the screen
