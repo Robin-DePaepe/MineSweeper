@@ -67,6 +67,8 @@ public class MapBehaviour : MonoBehaviour
 
     private void Update()
     {
+        m_MineCounterText.text = m_MineCounter.ToString();
+
         if (m_GameOver)
             return;
 
@@ -127,6 +129,10 @@ public class MapBehaviour : MonoBehaviour
         //we reveal the number of adjecent mines to the player
         else
         {
+            //if the player thought this was a mine but was wrong we correct the mine counter
+            if (m_Cells[cellPos.x, cellPos.y].State == MapCellState.TileFlag)
+                ++m_MineCounter;
+
             UpdateCellState(cellPos, CalculateMineNumber(cellPos));
             --m_TilesToRevealForWin;
 
@@ -213,13 +219,11 @@ public class MapBehaviour : MonoBehaviour
         {
             UpdateCellState(cellPos, MapCellState.TileUnknown);
             ++m_MineCounter;
-            m_MineCounterText.text = m_MineCounter.ToString();
         }
         else if (m_Cells[cellPos.x, cellPos.y].State == MapCellState.TileUnknown)
         {
             UpdateCellState(cellPos, MapCellState.TileFlag);
             --m_MineCounter;
-            m_MineCounterText.text = m_MineCounter.ToString();
         }
     }
 
@@ -312,6 +316,19 @@ public class MapBehaviour : MonoBehaviour
             return;
         }
 
+        //setup camera size
+        Camera camera = Camera.main;
+        float minSizeForHeight = (m_UpdatedMapHeight / 2f) * 1.2f; //Divided by 2 because 2 cells can fit into one orthographicSize height multiplied by a ratio that looks good with current UI setup
+        float minSizeForWidth = (m_UpdatedMapWidth / 4f) * 1.5f; //Divided by 4 because 4 cells can fit into one orthographicSize width multiplied by a ratio that looks good with current UI setup
+
+        //Use the heighest size number to make sure it always fits onto the screen
+        camera.orthographicSize = Mathf.Max(minSizeForHeight, minSizeForWidth);
+
+        //setup our location to always start from the bottom left of our camera
+        float screenOffsetRatio = 0.05f; //Just a small value that looks good
+        Vector3 screenPos = new Vector3(camera.pixelWidth * screenOffsetRatio, camera.pixelHeight * screenOffsetRatio, 10f);//
+        transform.position = camera.ScreenToWorldPoint(screenPos);
+
         //Setup variables correctly
         m_MineCounter = m_MineCount = m_UpdatedMineCount;
         m_MapHeight = m_UpdatedMapHeight;
@@ -323,7 +340,6 @@ public class MapBehaviour : MonoBehaviour
         m_GameOver = false;
 
         m_ErrorMessage.gameObject.SetActive(false);
-        m_MineCounterText.text = m_MineCounter.ToString();
         m_TimerText.text = m_Timer.ToString("F2");
         m_GameSmileyRepresentation.sprite = m_GameNeutralSmiley;
 
