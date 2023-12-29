@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -32,8 +33,9 @@ public class MapBehaviour : MonoBehaviour
 
     //regular variables
     private Tilemap m_Tilemap;
-    private MapCell[,] m_Cells;
     private string m_TilesPath = "Tiles/";
+    private TileBase m_TransitionAnimationTile;
+    private MapCell[,] m_Cells;
 
     private bool m_FirstClick = true;
     private bool m_GameOver = false;
@@ -52,6 +54,7 @@ public class MapBehaviour : MonoBehaviour
     {
         //setup variables
         m_Tilemap = GetComponentInChildren<Tilemap>();
+        m_TransitionAnimationTile = Resources.Load<TileBase>(m_TilesPath + "TileRevealAnimation");
 
         m_WidthInputField.text = m_MapWidth.ToString();
         m_HeightInputField.text = m_MapHeight.ToString();
@@ -124,7 +127,7 @@ public class MapBehaviour : MonoBehaviour
         if (m_Cells[cellPos.x, cellPos.y].IsMine)
         {
             GameEnd(false);
-            UpdateCellState(cellPos, MapCellState.TileExploded);
+            UpdateCellState(cellPos, MapCellState.TileExploded, true);
         }
         //we reveal the number of adjecent mines to the player
         else
@@ -133,7 +136,7 @@ public class MapBehaviour : MonoBehaviour
             if (m_Cells[cellPos.x, cellPos.y].State == MapCellState.TileFlag)
                 ++m_MineCounter;
 
-            UpdateCellState(cellPos, CalculateMineNumber(cellPos));
+            UpdateCellState(cellPos, CalculateMineNumber(cellPos), true);
             --m_TilesToRevealForWin;
 
             if (m_TilesToRevealForWin == 0)
@@ -158,12 +161,12 @@ public class MapBehaviour : MonoBehaviour
                 {
                     if (hasWon)
                     {
-                        UpdateCellState(new Vector3Int(x, y), MapCellState.TileFlag);
+                        UpdateCellState(new Vector3Int(x, y), MapCellState.TileFlag, true);
                         m_GameSmileyRepresentation.sprite = m_GameWonSmiley;
                     }
                     else
                     {
-                        UpdateCellState(new Vector3Int(x, y), MapCellState.TileMine);
+                        UpdateCellState(new Vector3Int(x, y), MapCellState.TileMine, true);
                         m_GameSmileyRepresentation.sprite = m_GameLossSmiley;
                     }
                 }
@@ -195,7 +198,7 @@ public class MapBehaviour : MonoBehaviour
         m_FirstClick = false;
 
         //The first clicked cell is always zero
-        UpdateCellState(cellPos, MapCellState.TileEmpty);
+        UpdateCellState(cellPos, MapCellState.TileEmpty, true);
         --m_TilesToRevealForWin;
 
         //Now we can generate the bombs 
@@ -217,12 +220,12 @@ public class MapBehaviour : MonoBehaviour
         //Set or unset the flag depending on the state
         if (m_Cells[cellPos.x, cellPos.y].State == MapCellState.TileFlag)
         {
-            UpdateCellState(cellPos, MapCellState.TileUnknown);
+            UpdateCellState(cellPos, MapCellState.TileUnknown, false);
             ++m_MineCounter;
         }
         else if (m_Cells[cellPos.x, cellPos.y].State == MapCellState.TileUnknown)
         {
-            UpdateCellState(cellPos, MapCellState.TileFlag);
+            UpdateCellState(cellPos, MapCellState.TileFlag, true);
             --m_MineCounter;
         }
     }
@@ -257,7 +260,7 @@ public class MapBehaviour : MonoBehaviour
         m_Cells = new MapCell[m_MapWidth, m_MapHeight];
         m_Tilemap.ClearAllTiles();
 
-        Tile unknownTile = Resources.Load<Tile>(m_TilesPath + MapCellState.TileUnknown.ToString() + "");
+        Tile unknownTile = Resources.Load<Tile>(m_TilesPath + MapCellState.TileUnknown.ToString());
 
         //Loop over the map cells
         for (int x = 0; x < m_MapWidth; x++)
@@ -394,7 +397,7 @@ public class MapBehaviour : MonoBehaviour
         return newIntValue;
     }
 
-    private void UpdateCellState(Vector3Int pos, MapCellState state)
+    private void UpdateCellState(Vector3Int pos, MapCellState state, bool revealCell)
     {
         if (!IsValidPos(pos))
         {
@@ -402,7 +405,20 @@ public class MapBehaviour : MonoBehaviour
             return;
         }
         m_Cells[pos.x, pos.y].State = state;
-        m_Tilemap.SetTile(m_Cells[pos.x, pos.y].Position, Resources.Load<Tile>(m_TilesPath + state.ToString() + ""));
+
+        if (revealCell)
+        {
+            m_Tilemap.SetTile(m_Cells[pos.x, pos.y].Position, m_TransitionAnimationTile);
+            StartCoroutine(SetTileAfterAnimation(m_Cells[pos.x, pos.y].Position, state, m_Tilemap));
+        }
+        else
+            m_Tilemap.SetTile(m_Cells[pos.x, pos.y].Position, Resources.Load<Tile>(m_TilesPath + state.ToString()));
+    }
+
+    private IEnumerator SetTileAfterAnimation(Vector3Int pos, MapCellState state, Tilemap tileMap)
+    {
+        yield return new WaitForSeconds(0.4f); //duration of the animation
+        tileMap.SetTile(pos, Resources.Load<Tile>(m_TilesPath + state.ToString()));
     }
 
     private bool IsValidPos(Vector3Int cellPos)
