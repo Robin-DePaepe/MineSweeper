@@ -19,12 +19,15 @@ public class MapBehaviour : MonoBehaviour
 
     private bool m_FirstClick = true;
     private bool m_GameOver = false;
+    private bool m_HasWon = false;
+    private int m_TilesToRevealForWin;
     #endregion
 
     #region LifeTime
     private void Awake()
     {
         m_Tilemap = GetComponentInChildren<Tilemap>();
+        m_TilesToRevealForWin = (m_MapWidth * m_MapHeight) - m_MineCount;
 
         //Check if the game is valid to start
         if (m_Tilemap == null)
@@ -94,24 +97,30 @@ public class MapBehaviour : MonoBehaviour
         //Player hit a mine
         if (m_Cells[cellPos.x, cellPos.y].IsMine)
         {
-            MineExploded();
+            GameEnd(false);
             UpdateCellState(cellPos, MapCellState.TileExploded);
         }
         //we reveal the number of adjecent mines to the player
         else
+        {
             UpdateCellState(cellPos, CalculateMineNumber(cellPos));
+            --m_TilesToRevealForWin;
+
+            if (m_TilesToRevealForWin == 0)
+                GameEnd(true);
+        }
 
         //start flooding if we revealed a zero tile
         if (m_Cells[cellPos.x, cellPos.y].State == MapCellState.TileEmpty)
             Flooding(cellPos, true);
     }
 
-    private void MineExploded()
+    private void GameEnd(bool hasWon)
     {
         m_GameOver = true;
+        m_HasWon = hasWon;
 
-        //Reveal all other mines 
-        //Loop over the map cells
+        //Reveal all mines 
         for (int x = 0; x < m_MapWidth; x++)
         {
             for (int y = 0; y < m_MapHeight; y++)
@@ -147,6 +156,7 @@ public class MapBehaviour : MonoBehaviour
 
         //The first clicked cell is always zero
         UpdateCellState(cellPos, MapCellState.TileEmpty);
+        --m_TilesToRevealForWin;
 
         //Now we can generate the bombs 
         GenerateMines(GetSurroundingCellPositions(cellPos, true));
