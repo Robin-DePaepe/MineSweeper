@@ -34,9 +34,19 @@ public struct MapCell
         IsMine = false;
         Position = position;
     }
+
     public bool IsRevealed()
     {
         return (State != MapCellState.TileUnknown && State != MapCellState.TileFlag);
+    }
+
+    public bool IsNumber()
+    {
+        int currentStateValue = (int)State;
+        int minStateValue = (int)MapCellState.TileEmpty;
+        int maxStateValue = (int)MapCellState.Tile8;
+
+        return (currentStateValue >= minStateValue && currentStateValue <= maxStateValue);
     }
 }
 

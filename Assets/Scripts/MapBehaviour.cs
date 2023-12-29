@@ -1,9 +1,6 @@
-using System;
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Tilemaps;
-using static UnityEditor.PlayerSettings;
 using Random = UnityEngine.Random;
 
 public class MapBehaviour : MonoBehaviour
@@ -47,21 +44,22 @@ public class MapBehaviour : MonoBehaviour
     private void Update()
     {
         if (Input.GetMouseButtonDown(0))//left mouse click occured
-            RevealTile();
+            HandleLeftMouseClick();
         else if (Input.GetMouseButtonDown(1))//right mouse click occured
             SetFlag();
     }
     #endregion
 
     #region Core Functionality
-    private void RevealTile()
+
+    private void HandleLeftMouseClick()
     {
         //Find the correct position
         Vector3 worldPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
         Vector3Int cellPos = m_Tilemap.WorldToCell(worldPos);
 
-        //we ignore invalid positions or when tile is not unkown (this means it is revealed or a flag(flagged tiles also can't be revealed as safe guard for the player))
-        if (!IsValidPos(cellPos) || m_Cells[cellPos.x, cellPos.y].State != MapCellState.TileUnknown)
+        //we ignore invalid positions
+        if (!IsValidPos(cellPos))
             return;
 
         //First click gets special treatment
@@ -71,6 +69,23 @@ public class MapBehaviour : MonoBehaviour
             return;
         }
 
+        //Check if we can flood the surrounding tiles if the correct amount of mines are flagged
+        if (m_Cells[cellPos.x, cellPos.y].IsNumber())
+        {
+            CheckNumberFlooding(cellPos);
+            return;
+        }
+
+        //when tile is not unkown(this means it is revealed or a flag(flagged tiles also can't be revealed as safe guard for the player))
+        if (m_Cells[cellPos.x, cellPos.y].State != MapCellState.TileUnknown)
+            return;
+
+        //if we reach this point we want to reveal the tile
+        RevealTile(cellPos);
+    }
+
+    private void RevealTile(Vector3Int cellPos)
+    {
         //Player hit a mine
         if (m_Cells[cellPos.x, cellPos.y].IsMine)
         {
@@ -83,7 +98,26 @@ public class MapBehaviour : MonoBehaviour
 
         //start flooding if we revealed a zero tile
         if (m_Cells[cellPos.x, cellPos.y].State == MapCellState.TileEmpty)
-            Flooding(cellPos);
+            Flooding(cellPos, true);
+    }
+
+    //If a number has the correct amount of flags around it we will reveal the surrounding tiles
+    private void CheckNumberFlooding(Vector3Int cellPos)
+    {
+        //Find the amount of flagged tiles around the cell
+        int flagCounter = 0;
+        List<Vector3Int> surroundingCellPositions = GetSurroundingCellPositions(cellPos, false);
+
+        foreach (Vector3Int pos in surroundingCellPositions)
+        {
+            if (m_Cells[pos.x, pos.y].State == MapCellState.TileFlag)
+                ++flagCounter;
+        }
+        //Check if the amount of flagged tiles matches the number
+        int desiredFlagTiles = (int)m_Cells[cellPos.x, cellPos.y].State - (int)MapCellState.TileEmpty;
+
+        if (desiredFlagTiles == flagCounter)
+            Flooding(cellPos, false);
     }
 
     private void HandleFirstClick(Vector3Int cellPos)
@@ -97,7 +131,7 @@ public class MapBehaviour : MonoBehaviour
         GenerateMines(GetSurroundingCellPositions(cellPos, true));
 
         //Now that the bombs are known we can start the flooding 
-        Flooding(cellPos);
+        Flooding(cellPos, true);
     }
 
     private void SetFlag()
@@ -116,6 +150,28 @@ public class MapBehaviour : MonoBehaviour
             UpdateCellState(cellPos, MapCellState.TileFlag);
     }
 
+    //Reveal all tiles that are allowed by game rules
+    private void Flooding(Vector3Int cellPos, bool shouldRevealFlags)
+    {
+        List<Vector3Int> surroundingCellPositions = GetSurroundingCellPositions(cellPos, false);
+
+        foreach (Vector3Int pos in surroundingCellPositions)
+        {
+            //check if we need to skip
+            if (shouldRevealFlags) //we only reveal the unknown and flag tiles
+            {
+                if (m_Cells[pos.x, pos.y].IsRevealed())
+                    continue;
+            }
+            else //We only reveal the unknown tiles
+            {
+                if (m_Cells[pos.x, pos.y].State != MapCellState.TileUnknown)
+                    continue;
+            }
+            //This function contains a call to Flooding so it is recursive
+            RevealTile(pos);
+        }
+    }
     #region Generation
     private void GenerateMap()
     {
@@ -179,25 +235,6 @@ public class MapBehaviour : MonoBehaviour
             return false;
 
         return true;
-    }
-
-    //Reveal all tiles that are allowed by game rules
-    private void Flooding(Vector3Int cellPos)
-    {
-        List<Vector3Int> surroundingCellPositions = GetSurroundingCellPositions(cellPos, false);
-
-        foreach (Vector3Int pos in surroundingCellPositions)
-        {
-            //We can skip the tile if it is already revealed
-            if (m_Cells[pos.x, pos.y].IsRevealed())
-                continue;
-
-            //Reveal the tag and check if we need to continue flooding
-            UpdateCellState(pos, CalculateMineNumber(pos));
-
-            if (m_Cells[pos.x, pos.y].State == MapCellState.TileEmpty)
-                Flooding(pos);
-        }
     }
 
     //retuns a list of a cell position (if included is true) and all its adjecent cells their position
