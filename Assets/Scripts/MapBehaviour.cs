@@ -148,51 +148,6 @@ public class MapBehaviour : MonoBehaviour
             Flooding(cellPos, true);
     }
 
-    private void GameEnd(bool hasWon)
-    {
-        m_GameOver = true;
-
-        //Reveal all mines 
-        for (int x = 0; x < m_MapWidth; x++)
-        {
-            for (int y = 0; y < m_MapHeight; y++)
-            {
-                if (m_Cells[x, y].IsMine)
-                {
-                    if (hasWon)
-                    {
-                        UpdateCellState(new Vector3Int(x, y), MapCellState.TileFlag, true);
-                        m_GameSmileyRepresentation.sprite = m_GameWonSmiley;
-                    }
-                    else
-                    {
-                        UpdateCellState(new Vector3Int(x, y), MapCellState.TileMine, true);
-                        m_GameSmileyRepresentation.sprite = m_GameLossSmiley;
-                    }
-                }
-            }
-        }
-    }
-
-    //If a number has the correct amount of flags around it we will reveal the surrounding tiles
-    private void CheckNumberFlooding(Vector3Int cellPos)
-    {
-        //Find the amount of flagged tiles around the cell
-        int flagCounter = 0;
-        List<Vector3Int> surroundingCellPositions = GetSurroundingCellPositions(cellPos, false);
-
-        foreach (Vector3Int pos in surroundingCellPositions)
-        {
-            if (m_Cells[pos.x, pos.y].State == MapCellState.TileFlag)
-                ++flagCounter;
-        }
-        //Check if the amount of flagged tiles matches the number
-        int desiredFlagTiles = (int)m_Cells[cellPos.x, cellPos.y].State - (int)MapCellState.TileEmpty;
-
-        if (desiredFlagTiles == flagCounter)
-            Flooding(cellPos, false);
-    }
-
     private void HandleFirstClick(Vector3Int cellPos)
     {
         m_FirstClick = false;
@@ -230,6 +185,31 @@ public class MapBehaviour : MonoBehaviour
         }
     }
 
+    private void GameEnd(bool hasWon)
+    {
+        m_GameOver = true;
+
+        //Reveal all mines 
+        for (int x = 0; x < m_MapWidth; x++)
+        {
+            for (int y = 0; y < m_MapHeight; y++)
+            {
+                if (m_Cells[x, y].IsMine)
+                {
+                    if (hasWon)
+                        UpdateCellState(new Vector3Int(x, y), MapCellState.TileFlag, true);
+                    else
+                        UpdateCellState(new Vector3Int(x, y), MapCellState.TileMine, true);
+                }
+            }
+        }
+        //set smiley correctly
+        if (hasWon)
+            m_GameSmileyRepresentation.sprite = m_GameWonSmiley;
+        else
+            m_GameSmileyRepresentation.sprite = m_GameLossSmiley;
+    }
+
     //Reveal all tiles that are allowed by game rules
     private void Flooding(Vector3Int cellPos, bool shouldRevealFlags)
     {
@@ -253,13 +233,31 @@ public class MapBehaviour : MonoBehaviour
         }
     }
 
+    //If a number has the correct amount of flags around it we will reveal the surrounding tiles
+    private void CheckNumberFlooding(Vector3Int cellPos)
+    {
+        //Find the amount of flagged tiles around the cell
+        int flagCounter = 0;
+        List<Vector3Int> surroundingCellPositions = GetSurroundingCellPositions(cellPos, false);
+
+        foreach (Vector3Int pos in surroundingCellPositions)
+        {
+            if (m_Cells[pos.x, pos.y].State == MapCellState.TileFlag)
+                ++flagCounter;
+        }
+        //Check if the amount of flagged tiles matches the number
+        int desiredFlagTiles = (int)m_Cells[cellPos.x, cellPos.y].State - (int)MapCellState.TileEmpty;
+
+        if (desiredFlagTiles == flagCounter)
+            Flooding(cellPos, false);
+    }
+
     #region Generation
     private void GenerateMap()
     {
         //setup variables
         m_Cells = new MapCell[m_MapWidth, m_MapHeight];
         m_Tilemap.ClearAllTiles();
-
         Tile unknownTile = Resources.Load<Tile>(m_TilesPath + MapCellState.TileUnknown.ToString());
 
         //Loop over the map cells
@@ -268,10 +266,8 @@ public class MapBehaviour : MonoBehaviour
             for (int y = 0; y < m_MapHeight; y++)
             {
                 //create a map cell and set the correct tile
-                Vector3Int pos = new Vector3Int(x, y, 0);
-
-                m_Cells[x, y] = new MapCell(pos);
-                m_Tilemap.SetTile(pos, unknownTile);
+                m_Cells[x, y] = new MapCell(new Vector3Int(x, y));
+                m_Tilemap.SetTile(m_Cells[x, y].Position, unknownTile);
             }
         }
     }
@@ -287,7 +283,6 @@ public class MapBehaviour : MonoBehaviour
             while (m_Cells[xPos, yPos].IsMine || nonMineCells.Contains(new Vector3Int(xPos, yPos)))
             {
                 ++xPos;
-
                 if (xPos >= m_MapWidth)
                 {
                     xPos = 0;
@@ -324,7 +319,7 @@ public class MapBehaviour : MonoBehaviour
         float minSizeForHeight = (m_UpdatedMapHeight / 2f) * 1.15f; //Divided by 2 because 2 cells can fit into one orthographicSize height multiplied by a ratio that looks good with current UI setup
         float minSizeForWidth = (m_UpdatedMapWidth / 4f) * 1.5f; //Divided by 4 because 4 cells can fit into one orthographicSize width multiplied by a ratio that looks good with current UI setup
 
-        //Use the heighest size number to make sure it always fits onto the screen
+        //Use the heighest size number to make sure the map always fits onto the screen
         camera.orthographicSize = Mathf.Max(minSizeForHeight, minSizeForWidth);
 
         //setup our location to always start from the bottom left of our camera
@@ -386,7 +381,6 @@ public class MapBehaviour : MonoBehaviour
     private int CheckInputFieldDataForValidNumber(string value)
     {
         int newIntValue = -1;
-
         int.TryParse(value, out newIntValue);
 
         if (newIntValue <= 0)
