@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Tilemaps;
+using UnityEngine.UI;
 using Random = UnityEngine.Random;
 
 public class MapBehaviour : MonoBehaviour
@@ -18,9 +19,16 @@ public class MapBehaviour : MonoBehaviour
     [SerializeField] private TextMeshProUGUI m_TimerText;
     [SerializeField] private TextMeshProUGUI m_ErrorMessage;
 
+    [Header("UI - input fields")]
     [SerializeField] private TextMeshProUGUI m_WidthInputField;
     [SerializeField] private TextMeshProUGUI m_HeightInputField;
     [SerializeField] private TextMeshProUGUI m_MineCountInputField;
+
+    [Header("UI - smiley")]
+    [SerializeField] private Sprite m_GameNeutralSmiley;
+    [SerializeField] private Sprite m_GameWonSmiley;
+    [SerializeField] private Sprite m_GameLossSmiley;
+    [SerializeField] private Image m_GameSmileyRepresentation;
 
     //regular variables
     private Tilemap m_Tilemap;
@@ -143,9 +151,15 @@ public class MapBehaviour : MonoBehaviour
                 if (m_Cells[x, y].IsMine)
                 {
                     if (hasWon)
+                    {
                         UpdateCellState(new Vector3Int(x, y), MapCellState.TileFlag);
+                        m_GameSmileyRepresentation.sprite = m_GameWonSmiley;
+                    }
                     else
+                    {
                         UpdateCellState(new Vector3Int(x, y), MapCellState.TileMine);
+                        m_GameSmileyRepresentation.sprite = m_GameLossSmiley;
+                    }
                 }
             }
         }
@@ -311,6 +325,7 @@ public class MapBehaviour : MonoBehaviour
         m_ErrorMessage.gameObject.SetActive(false);
         m_MineCounterText.text = m_MineCounter.ToString();
         m_TimerText.text = m_Timer.ToString("F2");
+        m_GameSmileyRepresentation.sprite = m_GameNeutralSmiley;
 
         //Create the map structure 
         GenerateMap();
