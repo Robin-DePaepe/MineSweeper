@@ -12,7 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 13b75c95f34a00d4e8c04f76b73312e6, type: 3}
   m_Name: TileRevealAnimation
   m_EditorClassIdentifier: 
-  m_AnimatedSprites: []
+  m_AnimatedSprites:
+  - {fileID: 21300000, guid: 360a4e2af419aa24396aeec03953eaf0, type: 3}
+  - {fileID: 21300000, guid: 2d22cd1ae7d921a47bcff4f17577d152, type: 3}
+  - {fileID: 21300000, guid: 2d22cd1ae7d921a47bcff4f17577d152, type: 3}
+  - {fileID: 21300000, guid: 2d22cd1ae7d921a47bcff4f17577d152, type: 3}
   m_MinSpeed: 1
   m_MaxSpeed: 1
   m_AnimationStartTime: 0
