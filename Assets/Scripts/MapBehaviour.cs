@@ -19,7 +19,6 @@ public class MapBehaviour : MonoBehaviour
 
     private bool m_FirstClick = true;
     private bool m_GameOver = false;
-    private bool m_HasWon = false;
     private int m_TilesToRevealForWin;
     #endregion
 
@@ -118,7 +117,6 @@ public class MapBehaviour : MonoBehaviour
     private void GameEnd(bool hasWon)
     {
         m_GameOver = true;
-        m_HasWon = hasWon;
 
         //Reveal all mines 
         for (int x = 0; x < m_MapWidth; x++)
@@ -126,7 +124,12 @@ public class MapBehaviour : MonoBehaviour
             for (int y = 0; y < m_MapHeight; y++)
             {
                 if (m_Cells[x, y].IsMine)
-                    UpdateCellState(new Vector3Int(x, y), MapCellState.TileMine);
+                {
+                    if (hasWon)
+                        UpdateCellState(new Vector3Int(x, y), MapCellState.TileFlag);
+                    else
+                        UpdateCellState(new Vector3Int(x, y), MapCellState.TileMine);
+                }
             }
         }
     }
