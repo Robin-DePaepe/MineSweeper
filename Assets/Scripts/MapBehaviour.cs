@@ -19,6 +19,7 @@ public class MapBehaviour : MonoBehaviour
     private Tilemap m_Tilemap;
     private MapCell[,] m_Cells;
     private string m_TilesPath = "Tiles/";
+    private bool m_FirstClick = true;
     #endregion
 
     #region LifeTime
@@ -39,9 +40,8 @@ public class MapBehaviour : MonoBehaviour
             //Todo - Add player feedback why game won't start
             return;
         }
-        //Create the map
+        //Create the map structure
         GenerateMap();
-        GenerateMines();
     }
 
     private void Update()
@@ -64,6 +64,13 @@ public class MapBehaviour : MonoBehaviour
         if (!IsValidPos(cellPos) || m_Cells[cellPos.x, cellPos.y].State != MapCellState.TileUnknown)
             return;
 
+        //First click gets special treatment
+        if (m_FirstClick)
+        {
+            HandleFirstClick(cellPos);
+            return;
+        }
+
         //Player hit a mine
         if (m_Cells[cellPos.x, cellPos.y].IsMine)
         {
@@ -73,6 +80,17 @@ public class MapBehaviour : MonoBehaviour
         //we reveal the number of adjecent mines to the player
         else
             UpdateCellState(cellPos, CalculateMineNumber(cellPos));
+    }
+
+    private void HandleFirstClick(Vector3Int cellPos)
+    {
+        m_FirstClick = false;
+
+        //The first clicked cell is always zero
+        UpdateCellState(cellPos, MapCellState.TileEmpty);
+
+        //Now we can generate the bombs 
+        GenerateMines(GetSurroundingCellPositions(cellPos));
     }
 
     private void SetFlag()
@@ -112,15 +130,15 @@ public class MapBehaviour : MonoBehaviour
         }
     }
 
-    private void GenerateMines()
+    private void GenerateMines(List<Vector3Int> nonMineCells)
     {
         for (int i = 0; i < m_MineCount; i++)
         {
             int xPos = Random.Range(0, m_MapWidth);
             int yPos = Random.Range(0, m_MapHeight);
 
-            //if the current position is a mine we iterate untill we find a none mine spot (avoids getting unvalid positions for unkown attempts in a row)
-            while (m_Cells[xPos, yPos].IsMine)
+            //if the current position can't be a mine or is already a mine we iterate untill we find a none mine spot (avoids getting unvalid positions for unkown attempts in a row)
+            while (m_Cells[xPos, yPos].IsMine || nonMineCells.Contains(new Vector3Int(xPos, yPos)))
             {
                 ++xPos;
 
@@ -154,6 +172,36 @@ public class MapBehaviour : MonoBehaviour
             return false;
 
         return true;
+    }
+
+    private List<Vector3Int> GetSurroundingCellPositions(Vector3Int cellPos) //retuns a list of a cell position and all its adjecent cells their position
+    {
+        List<Vector3Int> nonMineCells = new List<Vector3Int>();
+
+        //loop over all the surrounding tiles
+        for (int xAdjustment = -1; xAdjustment <= 1; xAdjustment++)
+        {
+            for (int yAdjustment = -1; yAdjustment <= 1; yAdjustment++)
+            {
+                //calculate the new position
+                int xPos = cellPos.x + xAdjustment;
+                int yPos = cellPos.y + yAdjustment;
+
+                //make sure the generation wraps around the edges
+                if (xPos >= m_MapWidth)
+                    xPos = 0;
+                else if (xPos < 0)
+                    xPos = m_MapWidth - 1;
+
+                if (yPos >= m_MapHeight)
+                    yPos = 0;
+                else if (yPos < 0)
+                    yPos = m_MapHeight - 1;
+
+                nonMineCells.Add(new Vector3Int(xPos, yPos));
+            }
+        }
+        return nonMineCells;
     }
 
     private MapCellState CalculateMineNumber(Vector3Int cellPos)
