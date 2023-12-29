@@ -16,7 +16,9 @@ public class MapBehaviour : MonoBehaviour
     private Tilemap m_Tilemap;
     private MapCell[,] m_Cells;
     private string m_TilesPath = "Tiles/";
+
     private bool m_FirstClick = true;
+    private bool m_GameOver = false;
     #endregion
 
     #region LifeTime
@@ -43,6 +45,9 @@ public class MapBehaviour : MonoBehaviour
 
     private void Update()
     {
+        if (m_GameOver)
+            return;
+
         if (Input.GetMouseButtonDown(0))//left mouse click occured
             HandleLeftMouseClick();
         else if (Input.GetMouseButtonDown(1))//right mouse click occured
@@ -89,8 +94,8 @@ public class MapBehaviour : MonoBehaviour
         //Player hit a mine
         if (m_Cells[cellPos.x, cellPos.y].IsMine)
         {
+            MineExploded();
             UpdateCellState(cellPos, MapCellState.TileExploded);
-            //Todo- run end game 
         }
         //we reveal the number of adjecent mines to the player
         else
@@ -99,6 +104,22 @@ public class MapBehaviour : MonoBehaviour
         //start flooding if we revealed a zero tile
         if (m_Cells[cellPos.x, cellPos.y].State == MapCellState.TileEmpty)
             Flooding(cellPos, true);
+    }
+
+    private void MineExploded()
+    {
+        m_GameOver = true;
+
+        //Reveal all other mines 
+        //Loop over the map cells
+        for (int x = 0; x < m_MapWidth; x++)
+        {
+            for (int y = 0; y < m_MapHeight; y++)
+            {
+                if (m_Cells[x, y].IsMine)
+                    UpdateCellState(new Vector3Int(x, y), MapCellState.TileMine);
+            }
+        }
     }
 
     //If a number has the correct amount of flags around it we will reveal the surrounding tiles
@@ -172,6 +193,7 @@ public class MapBehaviour : MonoBehaviour
             RevealTile(pos);
         }
     }
+
     #region Generation
     private void GenerateMap()
     {
