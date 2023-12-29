@@ -34,6 +34,10 @@ public struct MapCell
         IsMine = false;
         Position = position;
     }
+    public bool IsRevealed()
+    {
+        return (State != MapCellState.TileUnknown && State != MapCellState.TileFlag);
+    }
 }
 
 

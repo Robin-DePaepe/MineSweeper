@@ -80,6 +80,10 @@ public class MapBehaviour : MonoBehaviour
         //we reveal the number of adjecent mines to the player
         else
             UpdateCellState(cellPos, CalculateMineNumber(cellPos));
+
+        //start flooding if we revealed a zero tile
+        if (m_Cells[cellPos.x, cellPos.y].State == MapCellState.TileEmpty)
+            Flooding(cellPos);
     }
 
     private void HandleFirstClick(Vector3Int cellPos)
@@ -90,7 +94,10 @@ public class MapBehaviour : MonoBehaviour
         UpdateCellState(cellPos, MapCellState.TileEmpty);
 
         //Now we can generate the bombs 
-        GenerateMines(GetSurroundingCellPositions(cellPos));
+        GenerateMines(GetSurroundingCellPositions(cellPos, true));
+
+        //Now that the bombs are known we can start the flooding 
+        Flooding(cellPos);
     }
 
     private void SetFlag()
@@ -174,48 +181,37 @@ public class MapBehaviour : MonoBehaviour
         return true;
     }
 
-    private List<Vector3Int> GetSurroundingCellPositions(Vector3Int cellPos) //retuns a list of a cell position and all its adjecent cells their position
+    //Reveal all tiles that are allowed by game rules
+    private void Flooding(Vector3Int cellPos)
     {
-        List<Vector3Int> nonMineCells = new List<Vector3Int>();
+        List<Vector3Int> surroundingCellPositions = GetSurroundingCellPositions(cellPos, false);
 
-        //loop over all the surrounding tiles
-        for (int xAdjustment = -1; xAdjustment <= 1; xAdjustment++)
+        foreach (Vector3Int pos in surroundingCellPositions)
         {
-            for (int yAdjustment = -1; yAdjustment <= 1; yAdjustment++)
-            {
-                //calculate the new position
-                int xPos = cellPos.x + xAdjustment;
-                int yPos = cellPos.y + yAdjustment;
+            //We can skip the tile if it is already revealed
+            if (m_Cells[pos.x, pos.y].IsRevealed())
+                continue;
 
-                //make sure the generation wraps around the edges
-                if (xPos >= m_MapWidth)
-                    xPos = 0;
-                else if (xPos < 0)
-                    xPos = m_MapWidth - 1;
+            //Reveal the tag and check if we need to continue flooding
+            UpdateCellState(pos, CalculateMineNumber(pos));
 
-                if (yPos >= m_MapHeight)
-                    yPos = 0;
-                else if (yPos < 0)
-                    yPos = m_MapHeight - 1;
-
-                nonMineCells.Add(new Vector3Int(xPos, yPos));
-            }
+            if (m_Cells[pos.x, pos.y].State == MapCellState.TileEmpty)
+                Flooding(pos);
         }
-        return nonMineCells;
     }
 
-    private MapCellState CalculateMineNumber(Vector3Int cellPos)
+    //retuns a list of a cell position (if included is true) and all its adjecent cells their position
+    private List<Vector3Int> GetSurroundingCellPositions(Vector3Int cellPos, bool includeSelf)
     {
-        int mineCount = 0;
-        int cellStateValue = (int)MapCellState.TileEmpty;//the int value corresponding with 0 adjecent mines in the int
+        List<Vector3Int> surroundingCellPositions = new List<Vector3Int>();
 
         //loop over all the surrounding tiles
         for (int xAdjustment = -1; xAdjustment <= 1; xAdjustment++)
         {
             for (int yAdjustment = -1; yAdjustment <= 1; yAdjustment++)
             {
-                //skip if it is the tile itself
-                if (yAdjustment == 0 && xAdjustment == 0)
+                //skip if it is the tile itself is not wanted
+                if (includeSelf == false && (yAdjustment == 0 && xAdjustment == 0))
                     continue;
 
                 //calculate the new position
@@ -233,10 +229,25 @@ public class MapBehaviour : MonoBehaviour
                 else if (yPos < 0)
                     yPos = m_MapHeight - 1;
 
-                //Update minecount if the adjecent cell is a mine
-                if (m_Cells[xPos, yPos].IsMine)
-                    ++mineCount;
+                surroundingCellPositions.Add(new Vector3Int(xPos, yPos));
             }
+        }
+        return surroundingCellPositions;
+    }
+
+    private MapCellState CalculateMineNumber(Vector3Int cellPos)
+    {
+        int mineCount = 0;
+        int cellStateValue = (int)MapCellState.TileEmpty;//the int value corresponding with 0 adjecent mines in the int
+
+        //Get the adjecent cell positions and check if they are mines
+        List<Vector3Int> surroundingCellPositions = GetSurroundingCellPositions(cellPos, false);
+
+        foreach (Vector3Int pos in surroundingCellPositions)
+        {
+            //Update minecount if the adjecent cell is a mine
+            if (m_Cells[pos.x, pos.y].IsMine)
+                ++mineCount;
         }
         return (MapCellState)(cellStateValue + mineCount);
     }
