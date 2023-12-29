@@ -207,8 +207,8 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1651921422}
-        m_TargetAssemblyTypeName: MapBehaviour, Assembly-CSharp
+      - m_Target: {fileID: 894747110}
+        m_TargetAssemblyTypeName: GameBehaviour, Assembly-CSharp
         m_MethodName: StartGame
         m_Mode: 1
         m_Arguments:
@@ -1369,6 +1369,61 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 859254549}
   m_CullTransparentMesh: 1
+--- !u!1 &894747109
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 894747111}
+  - component: {fileID: 894747110}
+  m_Layer: 0
+  m_Name: GameManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &894747110
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 894747109}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2ea0df70032d05a4b9b321069a41597e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Map: {fileID: 1651921422}
+  m_ErrorMessage: {fileID: 382959494}
+  m_TimerText: {fileID: 992929320}
+  m_MineCounterText: {fileID: 2052553404}
+  m_WidthInputField: {fileID: 1172155309}
+  m_HeightInputField: {fileID: 1425132708}
+  m_MineCountInputField: {fileID: 1436461838}
+  m_GameNeutralSmiley: {fileID: 21300000, guid: fb989ea9e2eee6b4db42db384d7f7423, type: 3}
+  m_GameWonSmiley: {fileID: 21300000, guid: 17207d992b84c8b49899eb5f37df4f03, type: 3}
+  m_GameLossSmiley: {fileID: 21300000, guid: 68dd7c8c1b668dd458b61cab9dd5aa35, type: 3}
+  m_GameSmileyRepresentation: {fileID: 383943410}
+--- !u!4 &894747111
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 894747109}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 4
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &992929318
 GameObject:
   m_ObjectHideFlags: 0
@@ -1868,8 +1923,8 @@ MonoBehaviour:
   m_OnEndEdit:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1651921422}
-        m_TargetAssemblyTypeName: MapBehaviour, Assembly-CSharp
+      - m_Target: {fileID: 894747110}
+        m_TargetAssemblyTypeName: GameBehaviour, Assembly-CSharp
         m_MethodName: UpdateGameHeight
         m_Mode: 0
         m_Arguments:
@@ -2098,8 +2153,8 @@ MonoBehaviour:
   m_OnEndEdit:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1651921422}
-        m_TargetAssemblyTypeName: MapBehaviour, Assembly-CSharp
+      - m_Target: {fileID: 894747110}
+        m_TargetAssemblyTypeName: GameBehaviour, Assembly-CSharp
         m_MethodName: UpdateMineCounter
         m_Mode: 0
         m_Arguments:
@@ -2286,8 +2341,8 @@ MonoBehaviour:
   m_OnEndEdit:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1651921422}
-        m_TargetAssemblyTypeName: MapBehaviour, Assembly-CSharp
+      - m_Target: {fileID: 894747110}
+        m_TargetAssemblyTypeName: GameBehaviour, Assembly-CSharp
         m_MethodName: UpdateGameWidth
         m_Mode: 0
         m_Arguments:
@@ -3103,19 +3158,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4e1d3389fb45ea1498ca7876430613ca, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_MapWidth: 4
-  m_MapHeight: 4
-  m_MineCount: 5
-  m_MineCounterText: {fileID: 2052553404}
-  m_TimerText: {fileID: 992929320}
-  m_ErrorMessage: {fileID: 382959494}
-  m_WidthInputField: {fileID: 1172155309}
-  m_HeightInputField: {fileID: 1425132708}
-  m_MineCountInputField: {fileID: 1436461838}
-  m_GameNeutralSmiley: {fileID: 21300000, guid: fb989ea9e2eee6b4db42db384d7f7423, type: 3}
-  m_GameWonSmiley: {fileID: 21300000, guid: 17207d992b84c8b49899eb5f37df4f03, type: 3}
-  m_GameLossSmiley: {fileID: 21300000, guid: 68dd7c8c1b668dd458b61cab9dd5aa35, type: 3}
-  m_GameSmileyRepresentation: {fileID: 383943410}
 --- !u!1 &1813838804
 GameObject:
   m_ObjectHideFlags: 0

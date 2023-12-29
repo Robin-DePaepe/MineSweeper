@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.Tilemaps;
 using UnityEngine.UI;
 using Random = UnityEngine.Random;
@@ -9,87 +10,87 @@ using Random = UnityEngine.Random;
 public class MapBehaviour : MonoBehaviour
 {
     #region Variables
-    //Serialized variables
-    [Header("Map settings")]
-    [SerializeField] private int m_MapWidth;
-    [SerializeField] private int m_MapHeight;
-    [SerializeField] private int m_MineCount;
+    //properties 
+    private int m_MapWidth = 5;
+    public int MapWidth
+    {
+        get { return m_MapWidth; }
+    }
 
-    [Header("UI - information")]
-    [SerializeField] private TextMeshProUGUI m_MineCounterText;
-    [SerializeField] private TextMeshProUGUI m_TimerText;
-    [SerializeField] private TextMeshProUGUI m_ErrorMessage;
+    private int m_MapHeight = 4;
+    public int MapHeight
+    {
+        get { return m_MapHeight; }
+    }
 
-    [Header("UI - input fields")]
-    [SerializeField] private TextMeshProUGUI m_WidthInputField;
-    [SerializeField] private TextMeshProUGUI m_HeightInputField;
-    [SerializeField] private TextMeshProUGUI m_MineCountInputField;
+    private int m_MineCount = 6;
+    public int MineCount
+    {
+        get { return m_MineCount; }
+    }
 
-    [Header("UI - smiley")]
-    [SerializeField] private Sprite m_GameNeutralSmiley;
-    [SerializeField] private Sprite m_GameWonSmiley;
-    [SerializeField] private Sprite m_GameLossSmiley;
-    [SerializeField] private Image m_GameSmileyRepresentation;
+    private int m_MineCounter;
+    public int MineCounter
+    {
+        get { return m_MineCounter; }
+    }
+
+    private UnityEvent m_GameOverEvent = new UnityEvent();
+    public UnityEvent GameOverEvent
+    {
+        get { return m_GameOverEvent; }
+    }
+
+    private bool m_HasWon = false;
+    public bool HasWon
+    {
+        get { return m_HasWon; }
+    }
+
+    private bool m_FirstClick = true;
+    public bool FirstClickHappened
+    {
+        get { return !m_FirstClick; }
+    }
 
     //regular variables
     private Tilemap m_Tilemap;
-    private string m_TilesPath = "Tiles/";
     private TileBase m_TransitionAnimationTile;
     private MapCell[,] m_Cells;
-
-    private bool m_FirstClick = true;
-    private bool m_GameOver = false;
-
+    private string m_TilesPath = "Tiles/";
     private int m_TilesToRevealForWin;
-    private int m_MineCounter;
-    private float m_Timer = 0f;
-
-    private int m_UpdatedMapWidth;
-    private int m_UpdatedMapHeight;
-    private int m_UpdatedMineCount;
     #endregion
 
     #region LifeTime
     private void Awake()
     {
-        //setup variables
-        m_Tilemap = GetComponentInChildren<Tilemap>();
         m_TransitionAnimationTile = Resources.Load<TileBase>(m_TilesPath + "TileRevealAnimation");
-
-        m_WidthInputField.text = m_MapWidth.ToString();
-        m_HeightInputField.text = m_MapHeight.ToString();
-        m_MineCountInputField.text = m_MineCount.ToString();
-
-        m_UpdatedMapWidth = m_MapWidth;
-        m_UpdatedMapHeight = m_MapHeight;
-        m_UpdatedMineCount = m_MineCount;
-
-        //start the game
-        StartGame();
-    }
-
-    private void Update()
-    {
-        m_MineCounterText.text = m_MineCounter.ToString();
-
-        if (m_GameOver)
-            return;
-
-        if (!m_FirstClick)
-        {
-            m_Timer += Time.deltaTime;
-            m_TimerText.text = m_Timer.ToString("F2");
-        }
-
-        if (Input.GetMouseButtonDown(0))//left mouse click occured
-            HandleLeftMouseClick();
-        else if (Input.GetMouseButtonDown(1))//right mouse click occured
-            SetFlag();
+        m_Tilemap = GetComponentInChildren<Tilemap>();
     }
     #endregion
 
     #region Core Functionality
-    private void HandleLeftMouseClick()
+    public void SetupMap(int mineCount, int mapWidth, int mapHeight)
+    {
+        //Check if the game is valid to start
+        if (m_Tilemap == null)
+        {
+            Debug.LogError("The tilemap for the map is missing.");
+            return;
+        }
+        //Setup variables correctly
+        m_MineCounter = m_MineCount = mineCount;
+        m_MapHeight = mapHeight;
+        m_MapWidth = mapWidth;
+
+        m_TilesToRevealForWin = (m_MapWidth * m_MapHeight) - m_MineCount;
+        m_FirstClick = true;
+
+        //Create the map structure 
+        GenerateMap();
+    }
+
+    public void HandleLeftMouseClick()
     {
         //Find the correct position
         Vector3 worldPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
@@ -129,8 +130,7 @@ public class MapBehaviour : MonoBehaviour
             GameEnd(false);
             UpdateCellState(cellPos, MapCellState.TileExploded, true);
         }
-        //we reveal the number of adjecent mines to the player
-        else
+        else //we reveal the number of adjecent mines to the player
         {
             //if the player thought this was a mine but was wrong we correct the mine counter
             if (m_Cells[cellPos.x, cellPos.y].State == MapCellState.TileFlag)
@@ -142,7 +142,6 @@ public class MapBehaviour : MonoBehaviour
             if (m_TilesToRevealForWin == 0)
                 GameEnd(true);
         }
-
         //start flooding if we revealed a zero tile
         if (m_Cells[cellPos.x, cellPos.y].State == MapCellState.TileEmpty)
             Flooding(cellPos, true);
@@ -156,14 +155,12 @@ public class MapBehaviour : MonoBehaviour
         UpdateCellState(cellPos, MapCellState.TileEmpty, true);
         --m_TilesToRevealForWin;
 
-        //Now we can generate the bombs 
+        //Now we can generate the bombs and start flooding once they are known
         GenerateMines(GetSurroundingCellPositions(cellPos, true));
-
-        //Now that the bombs are known we can start the flooding 
         Flooding(cellPos, true);
     }
 
-    private void SetFlag()
+    public void SetFlag()
     {
         //Find the correct position
         Vector3 worldPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
@@ -187,7 +184,8 @@ public class MapBehaviour : MonoBehaviour
 
     private void GameEnd(bool hasWon)
     {
-        m_GameOver = true;
+        m_HasWon = hasWon;
+        m_GameOverEvent.Invoke();
 
         //Reveal all mines 
         for (int x = 0; x < m_MapWidth; x++)
@@ -203,11 +201,6 @@ public class MapBehaviour : MonoBehaviour
                 }
             }
         }
-        //set smiley correctly
-        if (hasWon)
-            m_GameSmileyRepresentation.sprite = m_GameWonSmiley;
-        else
-            m_GameSmileyRepresentation.sprite = m_GameLossSmiley;
     }
 
     //Reveal all tiles that are allowed by game rules
@@ -217,7 +210,7 @@ public class MapBehaviour : MonoBehaviour
 
         foreach (Vector3Int pos in surroundingCellPositions)
         {
-            //check if we need to skip
+            //check if we need to skip to avoid infinite loop
             if (shouldRevealFlags) //we only reveal the unknown and flag tiles
             {
                 if (m_Cells[pos.x, pos.y].IsRevealed())
@@ -298,106 +291,9 @@ public class MapBehaviour : MonoBehaviour
     #endregion
     #endregion
 
-    #region Public functions
-    public void StartGame()
-    {
-        //Check if the game is valid to start
-        if (m_Tilemap == null)
-        {
-            LogError("The tilemap for the map is missing.");
-            return;
-        }
-
-        if (m_UpdatedMineCount > ((m_UpdatedMapWidth * m_UpdatedMapHeight) - 9))//Our first click is a 0 tile which means at least 9 tiles can't be a mine
-        {
-            LogError("There are to many bombs for the size of the map");
-            return;
-        }
-
-        //setup camera size
-        Camera camera = Camera.main;
-        float minSizeForHeight = (m_UpdatedMapHeight / 2f) * 1.15f; //Divided by 2 because 2 cells can fit into one orthographicSize height multiplied by a ratio that looks good with current UI setup
-        float minSizeForWidth = (m_UpdatedMapWidth / 4f) * 1.5f; //Divided by 4 because 4 cells can fit into one orthographicSize width multiplied by a ratio that looks good with current UI setup
-
-        //Use the heighest size number to make sure the map always fits onto the screen
-        camera.orthographicSize = Mathf.Max(minSizeForHeight, minSizeForWidth);
-
-        //setup our location to always start from the bottom left of our camera
-        float screenOffsetRatio = 0.05f; //Just a small value that looks good
-        Vector3 screenPos = new Vector3(camera.pixelWidth * screenOffsetRatio, camera.pixelHeight * screenOffsetRatio, 10f);//
-        transform.position = camera.ScreenToWorldPoint(screenPos);
-
-        //Setup variables correctly
-        m_MineCounter = m_MineCount = m_UpdatedMineCount;
-        m_MapHeight = m_UpdatedMapHeight;
-        m_MapWidth = m_UpdatedMapWidth;
-
-        m_TilesToRevealForWin = (m_MapWidth * m_MapHeight) - m_MineCount;
-        m_Timer = 0f;
-        m_FirstClick = true;
-        m_GameOver = false;
-
-        m_ErrorMessage.gameObject.SetActive(false);
-        m_TimerText.text = m_Timer.ToString("F2");
-        m_GameSmileyRepresentation.sprite = m_GameNeutralSmiley;
-
-        //Create the map structure 
-        GenerateMap();
-    }
-
-    public void UpdateGameWidth(string newValue)
-    {
-        int temp = CheckInputFieldDataForValidNumber(newValue);
-
-        if (temp > 0)
-            m_UpdatedMapWidth = temp;
-    }
-
-    public void UpdateGameHeight(string newValue)
-    {
-        int temp = CheckInputFieldDataForValidNumber(newValue);
-
-        if (temp > 0)
-            m_UpdatedMapHeight = temp;
-    }
-
-    public void UpdateMineCounter(string newValue)
-    {
-        int temp = CheckInputFieldDataForValidNumber(newValue);
-
-        if (temp > 0)
-            m_UpdatedMineCount = temp;
-    }
-    #endregion
-
     #region helperFunctions
-
-    private void LogError(string message)
-    {
-        m_ErrorMessage.text = message;
-        m_ErrorMessage.gameObject.SetActive(true);
-    }
-
-    private int CheckInputFieldDataForValidNumber(string value)
-    {
-        int newIntValue = -1;
-        int.TryParse(value, out newIntValue);
-
-        if (newIntValue <= 0)
-            LogError("Invalid input given, the data has to be a number larger than 0");
-        else
-            m_ErrorMessage.gameObject.SetActive(false);
-
-        return newIntValue;
-    }
-
     private void UpdateCellState(Vector3Int pos, MapCellState state, bool revealCell)
     {
-        if (!IsValidPos(pos))
-        {
-            LogError("Something went wrong with the game");
-            return;
-        }
         m_Cells[pos.x, pos.y].State = state;
 
         if (revealCell)
@@ -425,7 +321,7 @@ public class MapBehaviour : MonoBehaviour
         return true;
     }
 
-    //retuns a list of a cell position (if included is true) and all its adjecent cells their position
+    //retuns a list of a cell position (if included) and all its adjecent cells their position
     private List<Vector3Int> GetSurroundingCellPositions(Vector3Int cellPos, bool includeSelf)
     {
         List<Vector3Int> surroundingCellPositions = new List<Vector3Int>();
